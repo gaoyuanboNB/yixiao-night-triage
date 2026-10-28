@@ -12,7 +12,7 @@
 - **语音输入**：Web Speech API（Chrome/Edge 支持 en-SG / zh-SG）；
 - **文字朗读**：行动卡一键 Read aloud，语速放慢（0.92x）适配老年用户；
 - **大字号高对比**：正文 ≥22px，行动卡列表带 ✓/⚠/① 视觉标记；
-- 行动卡由内置的规则引擎镜像（由 rules_definition.json 自动生成的镜像引擎（SG-RULES v2.4，与后端 83 例对拍一致，含否定/跌倒/过敏回归））生成，界面显示 `rules_version / rule_ids / audit_id / llm_override_allowed=false`，与后端契约一致。
+- 行动卡由 rules_definition.json 自动生成的镜像引擎（SG-RULES v2.5，与后端 93 例对拍一致，含否定/跌倒/过敏/出血回归），界面显示 `rules_version / rule_ids / audit_id / llm_override_allowed=false`，与后端契约一致。
 
 ## 边界（答辩时如实说明）
 
