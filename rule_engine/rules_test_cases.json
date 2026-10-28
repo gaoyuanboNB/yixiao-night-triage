@@ -1,0 +1,947 @@
+{
+  "rules_version": "SG-RULES v2.5",
+  "description": "规则引擎单元测试矩阵：38 例，含全部红旗规则、药物过量分级（NT-03 冲突修复验证）、否定词、含糊表达、冲突症状、空输入与回退契约。expected_tier 为引擎必须输出的确定性结果。",
+  "cases": [
+    {
+      "id": "E01",
+      "label": "夜间胸痛伴大汗（NT-01）",
+      "input": {
+        "symptom_text": "我父亲72岁，胸口像压了块石头，出汗很多，有点喘不上气",
+        "age": 72
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01a"
+    },
+    {
+      "id": "E02",
+      "label": "结构化胸痛，68岁",
+      "input": {
+        "age": 68,
+        "symptoms": [
+          "chest_pain"
+        ]
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01b"
+    },
+    {
+      "id": "E03",
+      "label": "呼吸困难",
+      "input": {
+        "symptom_text": "他喘得厉害，透不过气",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-02"
+    },
+    {
+      "id": "E04",
+      "label": "卒中征象（NT-02）",
+      "input": {
+        "symptom_text": "我妈68岁，说话突然不清楚了，嘴角好像歪了，右手拿不住杯子",
+        "age": 68
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-03"
+    },
+    {
+      "id": "E05",
+      "label": "叫不应",
+      "input": {
+        "symptom_text": "老人叫不应了，怎么喊都没反应",
+        "age": 81
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "E06",
+      "label": "抽搐",
+      "input": {
+        "symptom_text": "刚才突然抽搐了几秒",
+        "age": 66
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "E07",
+      "label": "晕厥",
+      "input": {
+        "symptom_text": "起夜时昏倒在地，几分钟后醒来",
+        "age": 74
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "E08",
+      "label": "严重过敏",
+      "input": {
+        "symptom_text": "吃药后全身风团，喉咙发紧，喘不上气",
+        "age": 58
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-05"
+    },
+    {
+      "id": "E09",
+      "label": "咯血",
+      "input": {
+        "symptom_text": "刚才咳嗽咳出血来了",
+        "age": 69
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-05"
+    },
+    {
+      "id": "E10",
+      "label": "呕血/剧烈腹痛",
+      "input": {
+        "symptom_text": "肚子痛得厉害，刚才呕血了",
+        "age": 63
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-06"
+    },
+    {
+      "id": "E11",
+      "label": "突发剧裂头痛",
+      "input": {
+        "symptom_text": "突然头痛，像一生中最痛的一次",
+        "age": 71
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-06"
+    },
+    {
+      "id": "E12",
+      "label": "高热伴颈项强直",
+      "input": {
+        "symptom_text": "烧到39度多，脖子很硬，人有点模糊",
+        "age": 77
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-06"
+    },
+    {
+      "id": "E13",
+      "label": "自伤表述",
+      "input": {
+        "symptom_text": "他说不想活了",
+        "age": 68
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-07"
+    },
+    {
+      "id": "E14",
+      "label": "糖尿病者叫不醒",
+      "input": {
+        "symptom_text": "有糖尿病，今晚叫不醒了",
+        "age": 73
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "E15",
+      "label": "安眠药两次+反应慢（NT-05）",
+      "input": {
+        "symptom_text": "奶奶可能把安眠药吃了两次，现在叫她反应有点慢",
+        "age": 81
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08a"
+    },
+    {
+      "id": "E16",
+      "label": "过量+反复呕吐",
+      "input": {
+        "symptom_text": "老人误服了药，一直呕吐",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08a"
+    },
+    {
+      "id": "E17",
+      "label": "跌倒撞到头+头晕",
+      "input": {
+        "symptom_text": "今晚跌倒撞到后脑，现在说头晕",
+        "age": 79
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08b"
+    },
+    {
+      "id": "E18",
+      "label": "抗凝药者跌倒（无症状）",
+      "input": {
+        "symptom_text": "吃华法林，刚才在浴室摔了一跤，头碰了一下",
+        "age": 76
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08b"
+    },
+    {
+      "id": "E19",
+      "label": "降压药加倍+头晕（NT-03 冲突修复验证）",
+      "input": {
+        "symptom_text": "晚上忘了已经吃过降压药，又吃了一次，现在觉得头晕乏力，站起来有点晃",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R07-HI-08c"
+    },
+    {
+      "id": "E20",
+      "label": "胸痛但<50岁无大汗",
+      "input": {
+        "symptom_text": "胸口有点痛",
+        "age": 42
+      },
+      "expected_tier": "high",
+      "expect_rule": "R01-HI-09"
+    },
+    {
+      "id": "E21",
+      "label": "跌倒撞头但无症状、无抗凝药",
+      "input": {
+        "symptom_text": "晚上跌倒，头碰了一下，目前没有不舒服",
+        "age": 72
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-10"
+    },
+    {
+      "id": "E22",
+      "label": "安眠药过量但无症状",
+      "input": {
+        "symptom_text": "可能吃了两次安眠药，现在看起来还好",
+        "age": 75
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08a"
+    },
+    {
+      "id": "E23",
+      "label": "降压药加倍但完全无症状",
+      "input": {
+        "symptom_text": "降压药好像重复吃了，人没什么感觉",
+        "age": 68
+      },
+      "expected_tier": "high",
+      "expect_rule": "R07-HI-08c"
+    },
+    {
+      "id": "E24",
+      "label": "不明药物过量无症状（保守监测）",
+      "input": {
+        "symptom_text": "不确定是不是多吃了一次药",
+        "age": 66
+      },
+      "expected_tier": "high",
+      "expect_rule": "R07-HI-08c"
+    },
+    {
+      "id": "E25",
+      "label": "发热（无红旗）",
+      "input": {
+        "symptom_text": "今晚有点发烧，38度",
+        "age": 80
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-11"
+    },
+    {
+      "id": "E26",
+      "label": "反复呕吐",
+      "input": {
+        "symptom_text": "晚饭后吐了好几次",
+        "age": 71
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-11"
+    },
+    {
+      "id": "E27",
+      "label": "仅头晕",
+      "input": {
+        "symptom_text": "就是有点头晕",
+        "age": 60
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-12"
+    },
+    {
+      "id": "E28",
+      "label": "老慢支夜间咳嗽加重（NT-04）",
+      "input": {
+        "symptom_text": "老慢支，这几天晚上咳嗽比平时重，有点白痰，不发烧，精神还行",
+        "age": 75
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-13"
+    },
+    {
+      "id": "E29",
+      "label": "仅跌倒无受伤无其他症状",
+      "input": {
+        "symptom_text": "刚才在厕所跌倒了一下，自己站起来了，没有哪里疼",
+        "age": 73
+      },
+      "expected_tier": "low",
+      "expect_rule": "R30-LO-14"
+    },
+    {
+      "id": "E30",
+      "label": "否定词：否认胸痛、没有呼吸困难",
+      "input": {
+        "symptom_text": "他说否认胸痛，也没有呼吸困难，就是有点头晕",
+        "age": 65
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-12"
+    },
+    {
+      "id": "E31",
+      "label": "否定不发烧生效",
+      "input": {
+        "symptom_text": "咳嗽加重，不发烧",
+        "age": 70
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-14"
+    },
+    {
+      "id": "E32",
+      "label": "冲突症状：胸痛+头晕（取高者）",
+      "input": {
+        "symptom_text": "胸口有点痛，人也有点头晕",
+        "age": 42
+      },
+      "expected_tier": "high",
+      "expect_rule": "R01-HI-09"
+    },
+    {
+      "id": "E33",
+      "label": "口语化：胸口闷闷的出好多汗",
+      "input": {
+        "symptom_text": "胸口闷闷的，出好多汗",
+        "age": 67
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01b"
+    },
+    {
+      "id": "E34",
+      "label": "英文输入",
+      "input": {
+        "symptom_text": "My father has chest pain and is sweating a lot",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01a"
+    },
+    {
+      "id": "E35",
+      "label": "空输入",
+      "input": {
+        "symptom_text": ""
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "E36",
+      "label": "无意义输入",
+      "input": {
+        "symptom_text": "哈哈哈哈",
+        "age": 70
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "E37",
+      "label": "含糊表达：不舒服",
+      "input": {
+        "symptom_text": "就是觉得整个人不太舒服",
+        "age": 72
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "E38",
+      "label": "结构化空症状+有年龄",
+      "input": {
+        "age": 80,
+        "symptoms": []
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "E39",
+      "label": "P0-1回归：He is not breathing（否定词不得误杀）",
+      "input": {
+        "symptom_text": "He is not breathing",
+        "age": 72
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E40",
+      "label": "P0-1回归：No pulse and lips are blue",
+      "input": {
+        "symptom_text": "No pulse and lips are blue",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E41",
+      "label": "P0-1回归：choking and turning blue",
+      "input": {
+        "symptom_text": "choking and turning blue",
+        "age": 68
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E42",
+      "label": "P0-1回归：Severe crushing chest pain, 42岁（不得降High）",
+      "input": {
+        "symptom_text": "Severe crushing chest pain",
+        "age": 42
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01a"
+    },
+    {
+      "id": "E43",
+      "label": "P0-1回归：胸口剧烈疼痛，42岁",
+      "input": {
+        "symptom_text": "胸口剧烈疼痛",
+        "age": 42
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01a"
+    },
+    {
+      "id": "E44",
+      "label": "P0-1回归：symptom_text=123（安全降级不抛异常）",
+      "input": {
+        "symptom_text": 123
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "E45",
+      "label": "中文：突然不呼吸了",
+      "input": {
+        "symptom_text": "突然不呼吸了",
+        "age": 75
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E46",
+      "label": "中文：被食物噎住",
+      "input": {
+        "symptom_text": "被食物噎住了，脸都憋红了",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E47",
+      "label": "中文：嘴唇发紫+喘不上气",
+      "input": {
+        "symptom_text": "嘴唇发紫，喘不上气",
+        "age": 66
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-00"
+    },
+    {
+      "id": "E48",
+      "label": "Schema：年龄为字符串数字应正确解析",
+      "input": {
+        "symptom_text": "胸口有点痛",
+        "age": "72"
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01b"
+    },
+    {
+      "id": "E49",
+      "label": "Schema：年龄超范围(999)应忽略并继续判级",
+      "input": {
+        "symptom_text": "头晕",
+        "age": 999
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-12"
+    },
+    {
+      "id": "E50",
+      "label": "英文否定：No chest pain, only dizzy",
+      "input": {
+        "symptom_text": "No chest pain, only feeling dizzy",
+        "age": 60
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-12"
+    },
+    {
+      "id": "N01",
+      "label": "P1-1回归：denies chest pain",
+      "input": {
+        "symptom_text": "denies chest pain",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N02",
+      "label": "P1-1回归：without chest pain",
+      "input": {
+        "symptom_text": "without chest pain",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N03",
+      "label": "P1-1回归：no trouble breathing",
+      "input": {
+        "symptom_text": "no trouble breathing",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N04",
+      "label": "P1-1回归：denies shortness of breath",
+      "input": {
+        "symptom_text": "denies shortness of breath",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N05",
+      "label": "P1-1回归：never had a seizure",
+      "input": {
+        "symptom_text": "never had a seizure",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N06",
+      "label": "P1-1回归：no choking",
+      "input": {
+        "symptom_text": "no choking",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N07",
+      "label": "P1-1回归：no blue lips",
+      "input": {
+        "symptom_text": "no blue lips",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N08",
+      "label": "P1-1回归：bleeding has stopped（后向停止词）",
+      "input": {
+        "symptom_text": "bleeding has stopped",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N09",
+      "label": "P1-1回归：denies vomiting",
+      "input": {
+        "symptom_text": "denies vomiting",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N10",
+      "label": "中文否定：没有胸痛，没有呼吸困难",
+      "input": {
+        "symptom_text": "没有胸痛，也没有呼吸困难",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N11",
+      "label": "中文否定：不喘了",
+      "input": {
+        "symptom_text": "现在不喘了",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N12",
+      "label": "中英混合输入：胸口痛 chest pain",
+      "input": {
+        "symptom_text": "他说胸口痛 chest pain 很难受",
+        "age": 66
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-01b"
+    },
+    {
+      "id": "N13",
+      "label": "口语化：喘不上气儿",
+      "input": {
+        "symptom_text": "老人喘不上气儿了",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-02"
+    },
+    {
+      "id": "N14",
+      "label": "危象表达：unresponsive",
+      "input": {
+        "symptom_text": "she is unresponsive",
+        "age": 80
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "N15",
+      "label": "危象表达：collapsed",
+      "input": {
+        "symptom_text": "he collapsed in the bathroom",
+        "age": 75
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-04"
+    },
+    {
+      "id": "N16",
+      "label": "单次呕吐与持续呕吐区分：吐了一次",
+      "input": {
+        "symptom_text": "晚上吐了一次，其他还好",
+        "age": 70
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-15"
+    },
+    {
+      "id": "N17",
+      "label": "P1-2回归：青霉素过敏+想吃阿莫西林（本地拦截）",
+      "input": {
+        "symptom_text": "想吃阿莫西林",
+        "allergies": "青霉素过敏",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": true
+    },
+    {
+      "id": "N18",
+      "label": "P1-2回归：无过敏者问阿莫西林（不误拦）",
+      "input": {
+        "symptom_text": "想吃阿莫西林",
+        "allergies": "无药物过敏",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": false
+    },
+    {
+      "id": "N19",
+      "label": "过敏在主诉中：青霉素过敏想吃阿莫西林",
+      "input": {
+        "symptom_text": "我青霉素过敏，今晚想吃阿莫西林",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": true
+    },
+    {
+      "id": "N20",
+      "label": "gasping 危象表达",
+      "input": {
+        "symptom_text": "he is gasping for air",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-02"
+    },
+    {
+      "id": "N21",
+      "label": "P0回归：fell and broke my hip（复杂跌倒→high）",
+      "input": {
+        "symptom_text": "fell and broke my hip",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-11"
+    },
+    {
+      "id": "N22",
+      "label": "P0回归：fell and cannot stand（复杂跌倒→high）",
+      "input": {
+        "symptom_text": "fell and cannot stand due to severe hip pain",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-11"
+    },
+    {
+      "id": "N23",
+      "label": "P0回归：fall down stairs hurt my back",
+      "input": {
+        "symptom_text": "fall down the stairs and hurt my back",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-11"
+    },
+    {
+      "id": "N24",
+      "label": "P0回归：跌倒后剧烈疼痛不能站立",
+      "input": {
+        "symptom_text": "跌倒后剧烈疼痛，不能站立",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-11"
+    },
+    {
+      "id": "N25",
+      "label": "P0回归：fell last night seems fine（未说明→medium 追问）",
+      "input": {
+        "symptom_text": "fell last night, seems fine",
+        "age": 70
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-16"
+    },
+    {
+      "id": "N26",
+      "label": "P0回归：明确无伤跌倒才可 low",
+      "input": {
+        "symptom_text": "刚才在厕所跌倒，没有受伤，能自己站起来",
+        "age": 70
+      },
+      "expected_tier": "low",
+      "expect_rule": "R30-LO-14"
+    },
+    {
+      "id": "N27",
+      "label": "P1-1回归：breathing normally, no choking",
+      "input": {
+        "symptom_text": "breathing normally, no choking",
+        "age": 70
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N28",
+      "label": "P1-1回归：denies severe crushing chest pain（长否定）",
+      "input": {
+        "symptom_text": "denies severe crushing chest pain",
+        "age": 60
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "N29",
+      "label": "P1-1回归：vomited once（不回溯为持续呕吐）",
+      "input": {
+        "symptom_text": "vomited once",
+        "age": 45
+      },
+      "expected_tier": "medium",
+      "expect_rule": "R20-MD-15"
+    },
+    {
+      "id": "N30",
+      "label": "P1-1回归：No penicillin allergy（过敏否定不误拦）",
+      "input": {
+        "symptom_text": "想吃阿莫西林",
+        "allergies": "No penicillin allergy",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": false
+    },
+    {
+      "id": "N31",
+      "label": "P1-1回归：I tolerate penicillin",
+      "input": {
+        "symptom_text": "想吃阿莫西林",
+        "allergies": "I tolerate penicillin",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": false
+    },
+    {
+      "id": "N32",
+      "label": "P1-1回归：No sulfa allergy + 复方新诺明",
+      "input": {
+        "symptom_text": "想吃复方新诺明",
+        "allergies": "No sulfa allergy",
+        "age": 65
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00",
+      "expect_allergy": false
+    },
+    {
+      "id": "N33",
+      "label": "危象表达：gasping for air",
+      "input": {
+        "symptom_text": "he is gasping for air",
+        "age": 70
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-02"
+    },
+    {
+      "id": "F01",
+      "label": "P1回归：fell and hit my head（撞头表达补充）",
+      "input": {
+        "symptom_text": "fell and hit my head on the table",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-10"
+    },
+    {
+      "id": "F02",
+      "label": "P1回归：摔到头了",
+      "input": {
+        "symptom_text": "奶奶刚才摔到头了",
+        "age": 75
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-10"
+    },
+    {
+      "id": "F03",
+      "label": "P1回归：grandma hit her head",
+      "input": {
+        "symptom_text": "grandma hit her head just now, seems okay",
+        "age": 80
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-10"
+    },
+    {
+      "id": "F04",
+      "label": "P1回归：banged his head on the door",
+      "input": {
+        "symptom_text": "he banged his head on the door",
+        "age": 66
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-10"
+    },
+    {
+      "id": "F05",
+      "label": "P1回归：抗凝药+任何跌倒（规则级条件→high）",
+      "input": {
+        "symptom_text": "he is on warfarin and fell last night",
+        "age": 76
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-12"
+    },
+    {
+      "id": "F06",
+      "label": "P1回归：吃抗凝药摔倒一次",
+      "input": {
+        "symptom_text": "吃抗凝药，今晚摔倒了一次",
+        "age": 78
+      },
+      "expected_tier": "high",
+      "expect_rule": "R12-HI-12"
+    },
+    {
+      "id": "F07",
+      "label": "P1回归：bleeding heavily（收窄后仍触发）",
+      "input": {
+        "symptom_text": "cut on arm is bleeding heavily",
+        "age": 60
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R02-EM-05"
+    },
+    {
+      "id": "F08",
+      "label": "P1回归：轻微出血不触发",
+      "input": {
+        "symptom_text": "minor bleeding from gums this morning",
+        "age": 70
+      },
+      "expected_tier": "insufficient_info",
+      "expect_rule": "R99-II-00"
+    },
+    {
+      "id": "F09",
+      "label": "抗凝+头伤仍 emergency（E18 平移验证）",
+      "input": {
+        "symptom_text": "吃华法林，刚才在浴室摔了一跤，头碰了一下",
+        "age": 76
+      },
+      "expected_tier": "emergency",
+      "expect_rule": "R07-EM-08b"
+    },
+    {
+      "id": "N34",
+      "label": "前后端一致性：英文 took it again + dizziness（前端镜像同判 high）",
+      "input": {
+        "symptom_text": "I forgot I already took my blood pressure pill tonight and took it again. Now I feel dizzy.",
+        "age": 70
+      },
+      "expected_tier": "high",
+      "expect_rule": "R07-HI-08c"
+    }
+  ]
+}

@@ -1,0 +1,566 @@
+{
+  "version": "SG-RULES v2.5",
+  "date": "2026-10-08",
+  "description": "医晓夜间分诊规则单一事实源。Python 引擎与本文件驱动，前端 patient_ui/engine.js 由 generate_frontend_engine.py 从本文件自动生成，禁止手改。v2.3：否定窗口 12 字符 + 后向停止词；生命体征危象拆分为'否定豁免的事实陈述'与'可被否定的症状'；新增过敏-药物冲突规则；新增 unresponsive/collapsed/gasping/单次呕吐。 v2.4：跌倒三档细分（复杂受伤→high/未说明→medium/明确无伤→low）；呼吸词收窄；否定作用域以'否定词+虚词+症状'计算并在标点/but/however处截断；vomited once 用代码覆盖机制防回溯；过敏史支持否定与耐受表达。 v2.5：跌倒撞头表达补充（hit/banged/磕到/头先着地等）；抗凝药从跌倒头伤正则移出，改为规则级条件（任何跌倒+抗凝药→high，头伤+抗凝药仍→emergency）；bleeding 收窄为严重出血表达。",
+  "tiers": {
+    "emergency": "call_995",
+    "high": "nursefirst_confirm_or_ucc_tonight",
+    "medium": "gp_or_polyclinic",
+    "low": "telemedicine_or_self_monitor",
+    "insufficient_info": "nursefirst_6262_6262"
+  },
+  "symptom_patterns": [
+    {
+      "re": "not breathing|stopped breathing|no breathing|isn'?t breathing|呼吸停[止了]|不呼吸(?!困难)|没有(?:在)?呼吸(?!困难)|没(?:了)?呼吸(?!困难)",
+      "codes": [
+        "critical_vitals"
+      ],
+      "negation_exempt": true,
+      "label": "呼吸停止（否定豁免：'not breathing' 本身是负面事实的肯定陈述）"
+    },
+    {
+      "re": "no pulse|摸不到脉搏|脉搏消失|no heartbeat",
+      "codes": [
+        "critical_vitals"
+      ],
+      "negation_exempt": true,
+      "label": "无脉搏（否定豁免）"
+    },
+    {
+      "re": "blue lips|lips (?:are |turning |going )?blue|嘴唇(?:发蓝|发紫|变紫)|turning blue|going blue",
+      "codes": [
+        "critical_vitals"
+      ],
+      "negation_exempt": false,
+      "label": "口唇发绀（可被否定：no blue lips）"
+    },
+    {
+      "re": "choking|被(?:食物)?噎|噎住|气道梗阻|气到说不出话",
+      "codes": [
+        "critical_vitals"
+      ],
+      "negation_exempt": false,
+      "label": "气道梗阻（可被否定：no choking）"
+    },
+    {
+      "re": "(?:胸|chest)[^。;.\\n]{0,10}(?:压榨|剧列?|剧烈|severe|crushing)|severe crushing|crushing chest",
+      "codes": [
+        "chest_pain_severe"
+      ],
+      "negation_exempt": false,
+      "label": "突发剧烈/压榨样胸痛"
+    },
+    {
+      "re": "胸(?:口|部)?.{0,6}(?:压榨|疼痛|痛|闷)|(?:chest|cp)\\s*pain|压榨",
+      "codes": [
+        "chest_pain"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:胸痛|胸闷|胸口|胸部|chest).{0,16}(?:大汗|出汗|冷汗|sweat)",
+      "codes": [
+        "chest_pain_with_sweat"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:difficulty breathing|trouble breathing|abnormal breathing|shortness of breath|cannot breathe|can'?t breathe|gasping|breathless|喘|呼吸困难|喘不上|气促|透不过|喘息|上气不接下气)",
+      "codes": [
+        "breathing_difficulty"
+      ],
+      "negation_exempt": false,
+      "label": "呼吸困难（仅限定表达，裸 breathing 不再命中）"
+    },
+    {
+      "re": "(?:口角歪斜|言语不清|说不清|单侧.{0,4}(?:无力|麻木|抬不起)|拿不住|face droop|slurr|one side weak)",
+      "codes": [
+        "stroke_signs"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:叫不(?:应|醒)|意识(?:模糊|不清)|昏迷|昏睡|反应慢|unconscious|unresponsive|not responding|confus)",
+      "codes": [
+        "altered_consciousness"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:晕厥|昏倒|眼前发黑倒下)|faint(?:ed|ing)?|passed out|collapse(?:d|s)?",
+      "codes": [
+        "fainted"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "抽搐|惊厥|seizure|convuls",
+      "codes": [
+        "seizure"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "出血不止|血流不止|大出血|止不住的血|uncontrolled bleeding|major bleeding|severe bleeding|bleeding (?:heavily|a lot|nonstop|won'?t (?:stop|clot)|that won'?t stop)",
+      "codes": [
+        "uncontrolled_bleeding"
+      ],
+      "negation_exempt": false,
+      "label": "严重出血（已收窄，轻微出血不触发）"
+    },
+    {
+      "re": "(?:风团|荨麻疹|喉咙发紧|喉头水肿)|(?:throat (?:swell|tight))|anaphylax|allergic reaction",
+      "codes": [
+        "anaphylaxis"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:过量|误服|多吃|重复服|重复吃|又吃了|加倍|吃了两次|服了两次|多吃了一次|多吃了一粒|double dose|overdose|took twice|took (?:it|my pill|the pill|my tablets?) again|took an extra|extra (?:dose|pill)|already took.{0,20}took)",
+      "codes": [
+        "suspected_overdose"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:板状腹|呕血|黑便|剧烈腹痛)|severe abdominal",
+      "codes": [
+        "severe_abdominal_pain"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:一生.{0,4}最.{0,2}(?:痛|疼)|突发剧烈头痛)|worst headache|thunderclap",
+      "codes": [
+        "worst_headache"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:脖子.{0,2}硬|颈项强直|不褪色.{0,4}(?:疹|斑)|高热.{0,8}(?:意识模糊|叫不应))|stiff neck|non.?blanch",
+      "codes": [
+        "fever_with_stiff_neck"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:不想活|轻生|自杀)|suicid|self.?harm|kill myself",
+      "codes": [
+        "self_harm"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:跌倒|摔倒|摔|滑倒|fell|fall|falling|slipped).{0,10}(?:头|后脑|head)|撞(?:到|上|了)头|磕(?:到|了)头|摔到头|头先着地|后脑着地|hit (?:my|his|her|the) head|banged (?:my|his|her|the) head|head (?:strike|injury|trauma)|struck my head",
+      "codes": [
+        "fall_head_injury"
+      ],
+      "negation_exempt": false,
+      "label": "跌倒/撞击致头部受伤（抗凝药已移出，由规则级条件处理）"
+    },
+    {
+      "re": "(?:突发.{0,4}失明|看不见了)|sudden vision loss",
+      "codes": [
+        "sudden_vision_loss"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:糖尿病).{0,12}(?:叫不醒|意识模糊|昏)|hypoglyc.{0,10}(?:unrespons|confus)",
+      "codes": [
+        "severe_hypoglycemia"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "咯血|呕血|咳血|咳出.{0,2}血|cough(?:ing)? (?:up )?blood|vomit(?:ing)? blood",
+      "codes": [
+        "cough_blood"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "发热|发烧|烧到|\\d{2}\\s*度|fever",
+      "codes": [
+        "fever"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "跌倒|摔倒|\\bfell\\b|fall(?:ed|ing)?",
+      "codes": [
+        "fall_unspecified"
+      ],
+      "negation_exempt": false,
+      "label": "跌倒（未说明受伤情况）"
+    },
+    {
+      "re": "咳嗽|感冒|伤风|cough|cold[- ]?like",
+      "codes": [
+        "cough"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "头晕|眩晕|dizzy|dizziness|lighthead",
+      "codes": [
+        "dizziness"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:站不稳|摇晃|站起来.{0,4}晃)|unsteady",
+      "codes": [
+        "unsteady_standing"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:呕|吐了|呕吐)|vomit(?:ed|ing)?|throwing up",
+      "codes": [
+        "persistent_vomiting"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "吐了一次|呕吐一次|vomited once|vomiting once|threw up once|one episode of vomiting",
+      "codes": [
+        "single_vomit"
+      ],
+      "negation_exempt": false
+    },
+    {
+      "re": "(?:跌倒|摔倒|fell|fall|falling)[^。;.\n]{0,12}(?:没有受伤|没受伤|无受伤|没有哪里疼|不疼|not hurt|no injury|no harm)|(?:no injury|not hurt|没有受伤)[^。;.\n]{0,12}(?:跌倒|摔倒|fell|fall)",
+      "codes": [
+        "fall_no_injury"
+      ],
+      "negation_exempt": false,
+      "label": "跌倒且明确无受伤（需显式无伤表述）"
+    },
+    {
+      "re": "(?:fell|fall|falling|跌倒|摔倒|摔)[^。;.\n]{0,40}(?:broke|fractur|cannot stand|can'?t stand|cannot walk|can'?t walk|unable to (?:stand|walk)|hurt my|hurt his|hurt her|剧痛|剧烈疼痛|骨折|无法站立|不能站立|站不起来|无法行走|不能行走|疼得厉害)",
+      "codes": [
+        "fall_complicated"
+      ],
+      "negation_exempt": false,
+      "label": "跌倒伴剧痛/骨折/无法站立行走"
+    }
+  ],
+  "med_patterns": [
+    {
+      "re": "安眠|镇静|催眠|佐匹克隆|唑吡坦|sedative|sleeping pill|zolpidem",
+      "med": "sedative"
+    },
+    {
+      "re": "吗啡|芬太尼|tramadol|opioid",
+      "med": "opioid"
+    },
+    {
+      "re": "二甲双胍|胰岛素|格列|降糖|metformin|insulin|sulfonyl",
+      "med": "hypoglycemic"
+    },
+    {
+      "re": "地高辛|胺碘酮|心脏病药|digoxin|amiodarone",
+      "med": "cardiac"
+    },
+    {
+      "re": "华法林|利伐沙班|阿司匹林|抗凝|warfarin|rivaroxaban",
+      "med": "anticoagulant"
+    },
+    {
+      "re": "降压|络活喜|缬沙坦|美托洛尔|antihypertensive|amlodipine|valsartan",
+      "med": "antihypertensive"
+    },
+    {
+      "re": "精神科|抗抑郁|psychotropic|antidepressant",
+      "med": "psychotropic"
+    },
+    {
+      "re": "他汀|statin",
+      "med": "statin"
+    },
+    {
+      "re": "维生素|vitamin|补剂",
+      "med": "vitamin"
+    }
+  ],
+  "rules": [
+    {
+      "id": "R02-EM-00",
+      "name": "生命体征危象（呼吸停止/无脉搏/发绀/气道梗阻）",
+      "tier": "emergency",
+      "symptoms_any": [
+        "critical_vitals"
+      ]
+    },
+    {
+      "id": "R02-EM-01a",
+      "name": "突发剧烈或压榨样胸痛（任何年龄）/胸痛伴大汗",
+      "tier": "emergency",
+      "symptoms_any": [
+        "chest_pain_severe",
+        "chest_pain_with_sweat"
+      ]
+    },
+    {
+      "id": "R02-EM-01b",
+      "name": "胸痛且年龄≥50",
+      "tier": "emergency",
+      "symptoms_any": [
+        "chest_pain"
+      ],
+      "age_min": 50
+    },
+    {
+      "id": "R02-EM-02",
+      "name": "呼吸困难",
+      "tier": "emergency",
+      "symptoms_any": [
+        "breathing_difficulty"
+      ]
+    },
+    {
+      "id": "R02-EM-03",
+      "name": "卒中征象(FAST)",
+      "tier": "emergency",
+      "symptoms_any": [
+        "stroke_signs"
+      ]
+    },
+    {
+      "id": "R02-EM-04",
+      "name": "意识改变/晕厥/抽搐",
+      "tier": "emergency",
+      "symptoms_any": [
+        "altered_consciousness",
+        "fainted",
+        "seizure"
+      ]
+    },
+    {
+      "id": "R02-EM-05",
+      "name": "大出血/严重过敏/咯血呕血",
+      "tier": "emergency",
+      "symptoms_any": [
+        "uncontrolled_bleeding",
+        "anaphylaxis",
+        "cough_blood"
+      ]
+    },
+    {
+      "id": "R02-EM-06",
+      "name": "剧烈腹痛/霹雳头痛/高热颈强/突发失明",
+      "tier": "emergency",
+      "symptoms_any": [
+        "severe_abdominal_pain",
+        "worst_headache",
+        "fever_with_stiff_neck",
+        "sudden_vision_loss"
+      ]
+    },
+    {
+      "id": "R02-EM-07",
+      "name": "自伤/轻生表述",
+      "tier": "emergency",
+      "symptoms_any": [
+        "self_harm"
+      ]
+    },
+    {
+      "id": "R02-EM-08",
+      "name": "严重低血糖",
+      "tier": "emergency",
+      "symptoms_any": [
+        "severe_hypoglycemia"
+      ]
+    },
+    {
+      "id": "R07-EM-08a",
+      "name": "高危药物过量，或过量伴红旗症状",
+      "tier": "emergency",
+      "symptoms_any": [
+        "suspected_overdose"
+      ],
+      "requires_any": true,
+      "branch_or": {
+        "meds_any": [
+          "sedative",
+          "opioid",
+          "hypoglycemic",
+          "cardiac",
+          "anticoagulant",
+          "psychotropic"
+        ],
+        "symptoms_any": [
+          "altered_consciousness",
+          "seizure",
+          "persistent_vomiting",
+          "breathing_difficulty"
+        ]
+      }
+    },
+    {
+      "id": "R07-EM-08b",
+      "name": "跌倒头部受伤伴症状或抗凝药",
+      "tier": "emergency",
+      "symptoms_any": [
+        "fall_head_injury"
+      ],
+      "branch_or": {
+        "symptoms_any": [
+          "altered_consciousness",
+          "persistent_vomiting",
+          "dizziness"
+        ],
+        "meds_any": [
+          "anticoagulant"
+        ]
+      }
+    },
+    {
+      "id": "R07-HI-08c",
+      "name": "可监测药物单次过量且无红旗症状",
+      "tier": "high",
+      "symptoms_any": [
+        "suspected_overdose"
+      ]
+    },
+    {
+      "id": "R01-HI-09",
+      "name": "非剧烈胸痛且年龄<50（当晚排查）",
+      "tier": "high",
+      "symptoms_any": [
+        "chest_pain"
+      ]
+    },
+    {
+      "id": "R12-HI-11",
+      "name": "跌倒伴剧痛/疑似骨折/无法站立行走",
+      "tier": "high",
+      "symptoms_any": [
+        "fall_complicated"
+      ]
+    },
+    {
+      "id": "R12-HI-12",
+      "name": "抗凝药使用者发生任何跌倒（需当晚评估）",
+      "tier": "high",
+      "symptoms_any": [
+        "fall_unspecified",
+        "fall_complicated",
+        "fall_no_injury",
+        "fall_head_injury"
+      ],
+      "meds_any": [
+        "anticoagulant"
+      ]
+    },
+    {
+      "id": "R12-HI-10",
+      "name": "跌倒头部受伤但暂无症状（48小时观察窗）",
+      "tier": "high",
+      "symptoms_any": [
+        "fall_head_injury"
+      ]
+    },
+    {
+      "id": "R20-MD-11",
+      "name": "反复呕吐/发热（无红旗）",
+      "tier": "medium",
+      "symptoms_any": [
+        "persistent_vomiting",
+        "fever"
+      ]
+    },
+    {
+      "id": "R20-MD-12",
+      "name": "头晕/站不稳（无红旗无药物过量）",
+      "tier": "medium",
+      "symptoms_any": [
+        "dizziness",
+        "unsteady_standing"
+      ]
+    },
+    {
+      "id": "R20-MD-13",
+      "name": "高龄+夜间新发症状（≥75 放大因子）",
+      "tier": "medium",
+      "age_min": 75,
+      "requires_any": true
+    },
+    {
+      "id": "R20-MD-14",
+      "name": "咳嗽/感冒样症状且无红旗",
+      "tier": "medium",
+      "symptoms_exactly": [
+        "cough"
+      ]
+    },
+    {
+      "id": "R20-MD-16",
+      "name": "跌倒但未说明受伤情况（夜间保守，需追问）",
+      "tier": "medium",
+      "symptoms_any": [
+        "fall_unspecified"
+      ]
+    },
+    {
+      "id": "R20-MD-15",
+      "name": "单次呕吐且无红旗（与持续呕吐区分）",
+      "tier": "medium",
+      "symptoms_exactly": [
+        "single_vomit"
+      ]
+    },
+    {
+      "id": "R30-LO-14",
+      "name": "仅跌倒无受伤且无任何症状",
+      "tier": "low",
+      "symptoms_exactly": [
+        "fall_no_injury"
+      ]
+    }
+  ],
+  "high_risk_overdose_meds": [
+    "sedative",
+    "opioid",
+    "hypoglycemic",
+    "cardiac",
+    "anticoagulant",
+    "psychotropic"
+  ],
+  "negation_tokens": "(?:无|没|不|未|否认|排除|denies|denied|deny|without|never|neither|nor|no|not|without)",
+  "negation_window": 32,
+  "stop_tokens": "(?:has stopped|have stopped|stopped|has resolved|resolved|no longer|is gone|has gone|已停止|已经停止|停止了|不再|消失了|好转了)",
+  "stop_window": 12,
+  "uncertainty_patterns": "不确定|是不是|会不会|不知道是不是|是否",
+  "allergy_rules": [
+    {
+      "allergy": "penicillin",
+      "allergy_re": "青霉素|penicillin",
+      "trigger_re": "阿莫西林|amoxicillin|氨苄西林|ampicillin|青霉素|penicillin"
+    },
+    {
+      "allergy": "sulfa",
+      "allergy_re": "磺胺|sulfa",
+      "trigger_re": "磺胺|sulfa|复方新诺明|bactrim"
+    },
+    {
+      "allergy": "nsaid",
+      "allergy_re": "阿司匹林过敏|aspirin allergy|nsaid过敏|nsaid allergy",
+      "trigger_re": "阿司匹林|aspirin|布洛芬|ibuprofen|nsaid"
+    }
+  ],
+  "code_overrides": {
+    "fall_no_injury": {
+      "removes": [
+        "fall_unspecified"
+      ]
+    },
+    "single_vomit": {
+      "removes": [
+        "persistent_vomiting"
+      ]
+    }
+  }
+}

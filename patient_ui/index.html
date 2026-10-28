@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>YiXiao · Night Triage & Care Navigation (Demo)</title>
+<style>
+  /* ===== 老年友好 + 移动优先：rem 缩放、大触控区、无横向溢出 ===== */
+  :root{
+    --bg:#071019; --panel:#0d1c2b; --panel2:#122a3f; --ink:#f4fbff; --muted:#a9c6dc;
+    --cyan:#26e5ff; --gold:#ffc452; --red:#e5484d; --green:#37e6a0; --line:#1f4260;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{font-size:17px;} /* 200% 浏览器缩放下仍可用弹性布局 */
+  body{background:var(--bg); color:var(--ink); font-family:"Segoe UI",Arial,"Microsoft YaHei",sans-serif;
+    font-size:1.29rem; line-height:1.55; overflow-x:hidden;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 16px 96px;}
+
+  /* 顶栏：允许换行，995 按钮固定可见但不挤压标题 */
+  .emergency-bar{position:sticky; top:0; z-index:99; background:#5c0a18; border-bottom:3px solid var(--red);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px;}
+  .emergency-bar .brand{font-weight:700; font-size:1.05rem; color:#ffd9e0; min-width:0;}
+  .btn-995{display:inline-block; background:var(--red); color:#fff; font-size:1.4rem; font-weight:800;
+    padding:12px 26px; border-radius:14px; text-decoration:none; border:3px solid #fff; letter-spacing:1px;
+    min-height:48px; display:inline-flex; align-items:center; white-space:nowrap;}
+  .btn-995:active{transform:scale(0.98);}
+
+  h1{font-size:1.75rem; margin:18px 0 6px; overflow-wrap:anywhere;}
+  .sub{color:var(--muted); font-size:1.1rem; margin-bottom:16px;}
+  .card{background:var(--panel); border:2px solid var(--line); border-radius:16px; padding:20px; margin-bottom:16px;}
+  .step-tag{color:var(--cyan); font-weight:700; font-size:0.9rem; letter-spacing:1px; margin-bottom:8px;}
+  .q{font-size:1.45rem; font-weight:700; margin-bottom:12px;}
+  textarea,input[type=number]{width:100%; font-size:1.25rem; border-radius:12px; border:2px solid var(--line);
+    background:#0a1522; color:var(--ink); padding:14px;}
+  textarea{min-height:110px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .chip{background:var(--panel2); border:2px solid var(--line); color:var(--ink); border-radius:999px;
+    padding:12px 18px; font-size:1.1rem; cursor:pointer; min-height:48px;}
+  .chip:active{border-color:var(--cyan);}
+  .btn{background:var(--cyan); color:#00232b; font-size:1.2rem; font-weight:800; border:none;
+    border-radius:12px; padding:14px 26px; cursor:pointer; min-height:48px;}
+  .btn.secondary{background:var(--panel2); color:var(--ink); border:2px solid var(--line);}
+  .btn.danger{background:var(--red); color:#fff;}
+  .btn.agree{background:var(--green); color:#03251a;}
+  .mic{background:var(--gold); border:none; border-radius:12px; padding:14px 18px; font-size:1.1rem; font-weight:800; cursor:pointer; min-height:48px;}
+
+  .tier{font-size:1.2rem; font-weight:800; padding:8px 14px; border-radius:10px; display:inline-block; margin-bottom:12px;}
+  .tier.emergency{background:var(--red); color:#fff;}
+  .tier.high{background:#c2410c; color:#fff;}
+  .tier.medium{background:#a16207; color:#fff;}
+  .tier.low{background:#15803d; color:#fff;}
+  .tier.info{background:#334155; color:#fff;}
+
+  .action{border-left:6px solid var(--cyan);}
+  .action .item{margin:12px 0; padding-left:34px; position:relative; overflow-wrap:anywhere;}
+  .action .item::before{content:"✓"; position:absolute; left:0; color:var(--green); font-weight:800;}
+  .action .item.escalate::before{content:"⚠"; color:var(--gold);}
+  .action .item.now::before{content:"1"; background:var(--red); color:#fff; border-radius:50%; width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center; font-size:0.9rem; top:5px;}
+  .zh{color:var(--muted); font-size:1.02rem; display:block; margin-top:2px;}
+  .big-actions{display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;}
+  .disclaimer{color:var(--muted); font-size:0.95rem; margin-top:18px; border-top:1px solid var(--line); padding-top:12px;}
+  .hidden{display:none !important;}
+  .lang-row{display:flex; justify-content:flex-end; padding:8px 0;}
+  .lang-btn{background:none; border:2px solid var(--line); color:var(--muted); border-radius:10px; padding:8px 14px; font-size:0.9rem; cursor:pointer; min-height:44px;}
+  .engine-line{color:var(--muted); font-size:0.82rem; margin-bottom:10px; overflow-wrap:anywhere;}
+  .consent-box{max-height:46vh; overflow:auto; border:2px solid var(--line); border-radius:12px; padding:14px; background:#0a1522; font-size:1.02rem;}
+  .consent-box h3{color:var(--cyan); font-size:1.05rem; margin:10px 0 4px;}
+  .consent-box p, .consent-box li{color:var(--muted); font-size:0.98rem;}
+  .consent-box ul{padding-left:20px;}
+  .linklike{background:none; border:none; color:var(--cyan); text-decoration:underline; cursor:pointer; font-size:0.95rem; padding:6px 0; min-height:44px;}
+
+  /* ===== 移动端适配（评审 P0-3）===== */
+  @media (max-width: 600px){
+    html{font-size:16px;}
+    .emergency-bar{justify-content:center; text-align:center;}
+    .emergency-bar .brand{width:100%; text-align:center;}
+    .btn-995{width:100%; justify-content:center;}
+    h1{font-size:1.45rem;}
+    .row{flex-direction:column;}
+    .row .btn,.row .mic,.row .chip{width:100%;}
+    #quickChips{display:grid; grid-template-columns:1fr; gap:8px;}
+    .chip{border-radius:12px;}
+    .big-actions{flex-direction:column;}
+    .big-actions .btn{width:100%;}
+    .card{padding:16px;}
+  }
+  @media (max-width: 380px){
+    html{font-size:15px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="emergency-bar">
+  <span class="brand" id="brandText">YiXiao 医晓 · Night Triage</span>
+  <a class="btn-995" href="tel:995" id="call995">📞 CALL 995</a>
+</div>
+
+<div class="wrap">
+  <div class="lang-row"><button class="lang-btn" id="langBtn">中文 / 中文</button></div>
+
+  <!-- ===== 0. PDPA 同意门（评审 P0-4）===== -->
+  <div id="consent" class="hidden">
+    <h1 data-i18n="consentTitle"></h1>
+    <div class="sub" data-i18n="consentSub"></div>
+    <div class="card">
+      <div class="consent-box" id="consentBody"></div>
+      <div class="row">
+        <button class="btn agree" id="agreeBtn"></button>
+        <button class="btn secondary" id="declineBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="declined" class="hidden">
+    <h1 data-i18n="declinedTitle"></h1>
+    <div class="card">
+      <p data-i18n="declinedBody" style="color:var(--muted)"></p>
+      <div class="row"><button class="btn secondary" id="reconsiderBtn"></button></div>
+    </div>
+  </div>
+
+  <!-- ===== 1. 主诉 ===== -->
+  <div id="step1" class="hidden">
+    <h1 data-i18n="s1Title"></h1>
+    <div class="sub" data-i18n="s1Sub"></div>
+    <div class="card">
+      <div class="step-tag" data-i18n="step1of2"></div>
+      <textarea id="complaint"></textarea>
+      <div class="row">
+        <button class="mic" id="micBtn"></button>
+        <button class="btn" id="nextBtn"></button>
+      </div>
+      <div class="row" id="quickChips"></div>
+    </div>
+  </div>
+
+  <!-- ===== 2. 最小画像 ===== -->
+  <div id="step2" class="hidden">
+    <h1 data-i18n="s2Title"></h1>
+    <div class="sub" data-i18n="s2Sub"></div>
+    <div class="card">
+      <div class="step-tag" data-i18n="step2of2"></div>
+      <div class="q" data-i18n="qAge"></div>
+      <input id="age" type="number" min="0" max="120">
+      <div class="q" data-i18n="qAlone" style="margin-top:16px;"></div>
+      <div class="row" id="aloneRow"></div>
+      <div class="q" data-i18n="qAllergy" style="margin-top:16px;"></div>
+      <textarea id="allergies" style="min-height:70px;"></textarea>
+      <div class="row">
+        <button class="btn" id="assessBtn"></button>
+        <button class="btn secondary" id="backBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3. 行动卡 ===== -->
+  <div id="result" class="hidden">
+    <div class="card action">
+      <div id="tierBadge" class="tier"></div>
+      <div class="engine-line" id="engineLine"></div>
+      <ul id="actionList" class="action" style="list-style:none;"></ul>
+      <div class="big-actions">
+        <button class="btn" id="readBtn" style="background:var(--green); color:#03251a;"></button>
+        <button class="btn secondary" id="restartBtn"></button>
+      </div>
+    </div>
+    <div class="disclaimer" id="disclaimer"></div>
+    <div class="disclaimer">
+      <button class="linklike" id="withdrawBtn"></button>
+    </div>
+  </div>
+</div>
+
+<script src="engine.js?v=SG-RULES-2.5"></script>
+<script>
+/* =========================================================================
+ * YiXiao 患者端 Demo v3
+ * - 分级：TriageEngine（由 rule_engine/rules_definition.json 自动生成，勿手改）
+ * - 正式部署：设置 window.ASSESS_ENDPOINT 后优先调用后端 /assess
+ * - PDPA：进入前独立同意页；同意信息仅存内存；提供撤回/删除入口
+ * ========================================================================= */
+window.ASSESS_ENDPOINT = window.ASSESS_ENDPOINT || null;
+
+const I18N = {
+  en: {
+    consentTitle: "Before we start — your data, your choice",
+    consentSub: "Please read this privacy notice. Nothing is collected until you agree.",
+    step1of2: "STEP 1 OF 2", step2of2: "STEP 2 OF 2",
+    s1Title: "Tonight, what is troubling you or your loved one?",
+    s1Sub: "You can speak or type. One sentence is enough.",
+    s2Title: "Three quick details",
+    s2Sub: "Answered in seconds, then you get the Action Card.",
+    qAge: "Age? 年龄", qAlone: "Does the person live alone? 是否独居？",
+    qAllergy: "Allergies? 过敏史",
+    complaintPh: "e.g. My father, 72, has crushing chest pain and is sweating...",
+    allergyPh: "e.g. penicillin; if none, type none",
+    mic: "🎤 Speak", micListening: "🔴 Listening…",
+    next: "Next", assess: "Get the Action Card", back: "Back",
+    aloneY: "Lives alone", aloneN: "With family", aloneU: "Not sure",
+    read: "🔊 Read aloud", restart: "Start over",
+    agree: "I agree", decline: "I do not agree",
+    declinedTitle: "No problem — nothing was collected",
+    declinedBody: "Without consent we cannot provide triage guidance. You can still call 995 in an emergency, or NurseFirst 6262 6262 for non-urgent advice. To change your mind, tap below.",
+    reconsider: "Let me read the notice again",
+    withdraw: "Withdraw consent and clear this session",
+    chips: [
+      "Chest pain with sweating",
+      "Face droop / slurred speech",
+      "Trouble breathing",
+      "Took blood pressure pills twice tonight"
+    ],
+    aloneU_default: null,
+    talkDoctorPre: "Say to the doctor: \"",
+    talkDoctorPost: "\"",
+    bring: "Bring: NRIC/FIN, all current pill boxes, allergy list.",
+    escalate: "If symptoms worsen, new confusion, trouble breathing, or collapse — call 995 immediately. If not breathing normally, the 995 dispatcher will guide you through CPR / AED.",
+    familyCall: "Call a family member, caregiver or neighbour now.",
+    insufficient: "We need more information. Call NurseFirst 6262 6262 for a nurse assessment.",
+    high: "Go to an Urgent Care Centre or hospital A&E tonight. Do not drive if feeling faint. If unsure, call NurseFirst 6262 6262 first.",
+    highBP: "If a home BP meter is available, measure now and bring the reading.",
+    medium1: "Book a GP or Polyclinic visit within 24-48 hours (HealthHub app can help).",
+    medium2: "Tonight: note symptoms every 30 minutes. Rest and drink water.",
+    low: "Consider a telemedicine consult, and self-monitor with the signs below.",
+    emergencyNow: "Call 995 now. Do not drive — an ambulance is safer.",
+    emergencyDo: "Unlock the front door and stay with the person.",
+    allergyStop: "STOP — do not take that medicine (allergy conflict). Consult a pharmacist or call NurseFirst 6262 6262.",
+    disclaimer: "This is triage and care-navigation guidance only — not a diagnosis. For emergencies call 995; for non-urgent advice call NurseFirst 6262 6262. 本工具仅提供分诊与就医指引，不构成诊断。",
+    consentBody: [
+      ["What we collect", "Only what you type or say tonight: the symptom description, age, living situation and allergies. We do not ask for your name, NRIC/FIN number, address or precise location."],
+      ["Where it goes", "Triage scoring runs locally in this app. Your symptom text may be sent to a Tencent Cloud large-language model only to generate follow-up questions and your action card. This transfer is disclosed here."],
+      ["How long we keep it", "Your inputs stay in this page's memory only and disappear when you close it. We do not write them to your device."],
+      ["Your rights", "Tap \"Withdraw consent and clear this session\" at the bottom of the result page: your inputs are erased from this page immediately. Once a backend is deployed, deleting server-side records follows the platform's deletion process and is handled by the team (contact channel to be published before release)."],
+      ["Not a diagnosis", "This tool gives directions on where to seek care. In an emergency always call 995 first."]
+    ]
+  },
+  zh: {
+    consentTitle: "开始之前——您的数据，您做主",
+    consentSub: "请阅读本隐私告知。在您同意之前，我们不会收集任何内容。",
+    step1of2: "第 1 步 / 共 2 步", step2of2: "第 2 步 / 共 2 步",
+    s1Title: "今晚，是哪里不舒服？",
+    s1Sub: "可以语音也可以打字，一句话就够。",
+    s2Title: "三个小问题",
+    s2Sub: "几秒答完，马上给您行动卡。",
+    qAge: "年龄？", qAlone: "患者是否独居？",
+    qAllergy: "过敏史？",
+    complaintPh: "例如：我父亲72岁，胸口压榨样疼痛还出汗……",
+    allergyPh: "例如：青霉素过敏；没有请填“无”",
+    mic: "🎤 语音输入", micListening: "🔴 倾听中…",
+    next: "下一步", assess: "获取行动卡", back: "返回",
+    aloneY: "独居", aloneN: "与家人住", aloneU: "不确定",
+    read: "🔊 朗读", restart: "重新开始",
+    agree: "我同意", decline: "不同意",
+    declinedTitle: "没关系——我们没有收集任何内容",
+    declinedBody: "未获得同意无法提供分诊指引。紧急情况请直接拨打 995；非紧急咨询可拨 NurseFirst 6262 6262。改变主意可点击下方重新阅读。",
+    reconsider: "重新阅读隐私告知",
+    withdraw: "撤回同意并清除本次会话",
+    chips: [
+      "胸痛伴出汗",
+      "口角歪斜 / 说话不清",
+      "呼吸困难",
+      "今晚误服了两次降压药"
+    ],
+    talkDoctorPre: "向医生转述：“",
+    talkDoctorPost: "”",
+    bring: "带好：NRIC/FIN、正在服用的药盒、过敏清单。",
+    escalate: "如症状加重、出现意识改变、呼吸困难或倒地——立即拨打 995；如呼吸停止或不正常，995 调度员会电话指导您进行 CPR / 使用 AED。",
+    familyCall: "请立即联系家人、照护者或邻居。",
+    insufficient: "信息不足，请拨打 NurseFirst 6262 6262 由护士评估。",
+    high: "今晚前往 Urgent Care Centre 或医院急诊；头晕就不要自己开车。拿不准可先拨 NurseFirst 6262 6262。",
+    highBP: "家中有血压计请先测量，带着读数就诊。",
+    medium1: "24-48小时内预约 GP 或综合诊疗所（可用 HealthHub）。",
+    medium2: "今晚每30分钟记录一次症状，休息、喝水。",
+    low: "可先远程问诊，并按下方信号自我观察。",
+    emergencyNow: "立即拨打 995，不要自行驾车——救护车更安全。",
+    emergencyDo: "打开家门，留在患者身边。",
+    allergyStop: "请勿服用该药（过敏冲突）！请咨询药剂师或拨打 NurseFirst 6262 6262。",
+    disclaimer: "本工具仅提供分诊与就医指引，不构成诊断。紧急情况请拨 995；非紧急咨询可拨 NurseFirst 6262 6262。This is triage guidance only — not a diagnosis.",
+    consentBody: [
+      ["我们收集什么", "只有您今晚输入或说出内容：症状描述、年龄、是否独居、过敏史。我们不询问姓名、NRIC/FIN 号码、住址或精确位置。"],
+      ["数据去向", "分级判定在本页本地完成；症状文本可能发送至腾讯云大模型，仅用于生成追问和行动卡。此处已明确披露该传输。"],
+      ["保存多久", "您的输入只存在于本页内存中，关闭页面即消失；不会写入您的设备。"],
+      ["您的权利", "点击结果页底部\"撤回同意并清除本次会话\"：本页内的输入会立即清除。后端部署后，服务器端记录的删除走平台删除流程，由团队处理（对外联系渠道将在发布前公布）。"],
+      ["不是诊断", "本工具只告诉您去哪里就医。紧急情况请第一时间拨打 995。"]
+    ]
+  }
+};
+
+let lang = 'en';
+let livesAlone = null;
+let consent = null; // {version, at} 仅存内存
+
+const $ = id => document.getElementById(id);
+function t(k){ return I18N[lang][k]; }
+
+function el(tag, cls, text){ const e = document.createElement(tag); if(cls) e.className = cls; if(text != null) e.textContent = text; return e; }
+
+function applyLang(){
+  document.documentElement.lang = (lang === 'en') ? 'en' : 'zh';
+  document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
+  $('complaint').placeholder = t('complaintPh');
+  $('allergies').placeholder = t('allergyPh');
+  $('micBtn').textContent = t('mic');
+  $('nextBtn').textContent = t('next');
+  $('assessBtn').textContent = t('assess');
+  $('backBtn').textContent = t('back');
+  $('readBtn').textContent = t('read');
+  $('restartBtn').textContent = t('restart');
+  $('agreeBtn').textContent = t('agree');
+  $('declineBtn').textContent = t('decline');
+  $('reconsiderBtn').textContent = t('reconsider');
+  $('withdrawBtn').textContent = t('withdraw');
+  $('langBtn').textContent = (lang === 'en') ? '中文界面' : 'English';
+  renderConsentBody();
+  renderChips();
+  renderAlone();
+}
+function renderConsentBody(){
+  const box = $('consentBody'); box.textContent = '';
+  t('consentBody').forEach(([h, b]) => {
+    box.appendChild(el('h3', null, h));
+    box.appendChild(el('p', null, b));
+  });
+}
+function renderChips(){
+  const box = $('quickChips'); box.textContent = '';
+  t('chips').forEach(c => {
+    const b = el('button', 'chip', c);
+    b.onclick = () => { $('complaint').value = c; };
+    box.appendChild(b);
+  });
+}
+function renderAlone(){
+  const box = $('aloneRow'); box.textContent = '';
+  [['aloneY', true], ['aloneN', false], ['aloneU', null]].forEach(([k, v]) => {
+    const b = el('button', 'chip', t(k));
+    b.onclick = () => { livesAlone = v; };
+    box.appendChild(b);
+  });
+}
+
+/* ---- 屏幕切换 ---- */
+function show(id){ ['consent','declined','step1','step2','result'].forEach(x => $(x).classList.add('hidden')); $(id).classList.remove('hidden'); window.scrollTo(0, 0); }
+
+/* ---- 同意门 ---- */
+$('agreeBtn').onclick = () => {
+  consent = { version: 'PDPA-notice-v1.0', at: new Date().toISOString() };
+  show('step1');
+};
+$('declineBtn').onclick = () => show('declined');
+$('reconsiderBtn').onclick = () => show('consent');
+$('withdrawBtn').onclick = () => {
+  // 名实相符：立即清除本页内存中的全部会话数据（评审 P1-3）
+  consent = null; livesAlone = null;
+  $('complaint').value = ''; $('age').value = ''; $('allergies').value = '';
+  $('actionList').textContent = ''; $('tierBadge').textContent = ''; $('engineLine').textContent = '';
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  show('consent');
+};
+
+/* ---- 评估入口：优先后端 /assess，离线用本地镜像引擎 ---- */
+async function runAssess(payload){
+  if (window.ASSESS_ENDPOINT){
+    try{
+      const res = await fetch(window.ASSESS_ENDPOINT, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(Object.assign({consent}, payload))
+      });
+      if (res.ok) return await res.json();
+      window._backendDown = true;
+    }catch(e){ window._backendDown = true; /* 后端不可达 → 本地镜像兜底 */ }
+  }
+  return TriageEngine.assess(payload);
+}
+
+$('nextBtn').onclick = () => { if(!$('complaint').value.trim()){ $('complaint').placeholder = t('complaintPh'); $('complaint').focus(); return; } show('step2'); };
+$('backBtn').onclick = () => show('step1');
+
+$('assessBtn').onclick = async () => {
+  const r = await runAssess({
+    symptom_text: $('complaint').value,
+    age: $('age').value,
+    allergies: $('allergies').value
+  });
+  render(r);
+};
+
+/* ---- 行动卡渲染：全部 textContent，杜绝 HTML/XSS 注入（评审 P0-2）---- */
+function buildCard(lines){
+  const list = $('actionList'); list.textContent = '';
+  lines.forEach(([cls, en, zh]) => {
+    const li = el('li', 'item ' + (cls || ''));
+    li.appendChild(el('span', null, en));
+    if (zh) li.appendChild(el('span', 'zh', zh));
+    list.appendChild(li);
+  });
+}
+function render(r){
+  const badge = $('tierBadge');
+  const navEn = {emergency:'Call 995 now', high:'UCC / A&E tonight (NurseFirst first if unsure)',
+    medium:'GP / Polyclinic within 24-48h', low:'Telemedicine or self-monitor',
+    insufficient_info:'Call NurseFirst 6262 6262'}[r.tier];
+  badge.textContent = 'RISK: ' + r.tier.toUpperCase() + ' · ' + navEn;
+  badge.className = 'tier ' + (r.tier === 'insufficient_info' ? 'info' : r.tier);
+  $('engineLine').textContent = 'engine: ' + r.rules_version + ' · rules ' +
+    r.triggered_rules.map(h => h.rule_id).join(', ') + ' · audit ' + r.audit_id +
+    ' · llm_override_allowed=false' + (r.fallback_used ? ' · FALLBACK' : '') +
+    (window._backendDown ? ' · backend unreachable → local mirror' : '') +
+    ' · build ' + TriageEngine.build;
+
+  const isZh = (lang === 'zh');
+  const L = [];
+  if (r.tier === 'emergency'){
+    L.push(['now', t('emergencyNow'), null]);
+    L.push(['', t('emergencyDo'), null]);
+  }
+  if (r.tier === 'high'){
+    L.push(['now', t('high'), null]);
+    if (/blood pressure|降压|amlodipine/i.test($('complaint').value + JSON.stringify(r.triggered_rules))) L.push(['', t('highBP'), null]);
+  }
+  if (r.tier === 'medium'){
+    L.push(['now', t('medium1'), null]);
+    L.push(['', t('medium2'), null]);
+  }
+  if (r.tier === 'low') L.push(['now', t('low'), null]);
+  if (r.tier === 'insufficient_info') L.push(['now', t('insufficient'), null]);
+  if (r.allergy_conflict) L.push(['now', t('allergyStop'), null]);
+  L.push(['', t('bring'), null]);
+  const main = $('complaint').value.trim();
+  L.push(['', t('talkDoctorPre') + main + t('talkDoctorPost'), null]);
+  if (livesAlone === true) L.push(['', t('familyCall'), null]);
+  L.push(['escalate', t('escalate'), null]);
+  buildCard(L);
+  show('result');
+  $('readBtn').onclick = () => speak(L.map(x => x[1]).join(' ... '));
+}
+
+/* ---- 语音输入与朗读：跟随界面语言（评审 细节#5）---- */
+$('micBtn').onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ $('micBtn').textContent = (lang==='en')?'Speech not supported 此浏览器不支持':'此浏览器不支持语音'; return; }
+  const rec = new SR();
+  rec.lang = (lang === 'en') ? 'en-SG' : 'zh-SG';
+  rec.interimResults = false;
+  $('micBtn').textContent = t('micListening');
+  rec.onresult = e => { $('complaint').value = e.results[0][0].transcript; $('micBtn').textContent = t('mic'); };
+  rec.onerror = rec.onend = () => { $('micBtn').textContent = t('mic'); };
+  rec.start();
+};
+function speak(text){
+  const TTS = window.speechSynthesis; if(!TTS) return;
+  TTS.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = (lang === 'en') ? 'en-SG' : 'zh-SG';
+  u.rate = 0.92;
+  TTS.speak(u);
+}
+
+$('langBtn').onclick = () => { lang = (lang === 'en') ? 'zh' : 'en'; applyLang(); };
+applyLang();
+show('consent');
+</script>
+</body>
+</html>
